@@ -1,0 +1,97 @@
+# Gherkin AI Enterprise Constitution
+# This file enforces strict guardrails for AI Agents to prevent hallucinated architecture.
+# Every decision here reduces the LLM's solution space to your organization's standards.
+
+organization:
+  name: my-organization
+
+architecture:
+  style: hexagonal
+  required:
+    - CQRS for complex domain logic
+    - Ports and Adapters (Hexagonal) for external dependencies
+  forbidden:
+    - Direct database queries from Controllers
+    - Global state mutations
+    - Circular dependencies between modules
+  layers:
+    - domain
+    - application
+    - infrastructure
+    - presentation
+
+security:
+  dataClassification: RESTRICTED
+  authProvider: JWT bearer tokens (HS256); the tenant comes only from the token claim
+  secretsPolicy: "Never hardcode secrets: read them from environment variables,
+    provided by the platform secret manager in production."
+  piiDetection: true
+  allowedLLMProviders:
+    - openai
+    - anthropic
+    - ollama
+  forbiddenLLMProviders:
+    - public-free-models
+
+stack:
+  backend: java-quarkus
+  frontend: none
+  database: postgresql
+  testing: junit
+  messaging: pubsub
+
+policies:
+  codeReview:
+    required: true
+    minReviewers: 1
+  testing:
+    unitCoverageTarget: 80
+    e2eRequired: true
+    contractTestsRequired: true
+  deployment:
+    ciRequired: true
+    dryRunDefault: true
+    humanApprovalRequired: true
+  agents:
+    domain:
+      permissions:
+        read:
+          - specs/**
+          - docs/domain/**
+        write:
+          - src/domain/**
+    backend:
+      permissions:
+        read:
+          - specs/**
+          - contracts/**
+        write:
+          - src/api/**
+          - src/application/**
+    qa:
+      permissions:
+        read:
+          - specs/**
+          - src/**
+        write:
+          - tests/**
+
+compliance:
+  frameworks:
+    - PCI DSS (card data)
+    - SOX (financial reporting controls)
+    - PSD2 / Open Banking (strong customer authentication)
+    - AML / KYC
+  auditTrail: true
+  dataRetention: "7 years"
+
+constraints:
+  - level: must
+    description: All API endpoints must require authentication
+    category: security
+  - level: must-not
+    description: Generated code must not contain hardcoded secrets
+    category: security
+  - level: should
+    description: Domain logic should be free of infrastructure concerns
+    category: architecture

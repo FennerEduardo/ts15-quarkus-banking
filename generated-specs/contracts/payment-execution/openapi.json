@@ -1,0 +1,92 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Ejecución de pagos entre cuentas (BIAN Payment Execution) API Specification",
+    "version": "1.0.0",
+    "description": "Auto-generated OpenAPI specification for Ejecución de pagos entre cuentas (BIAN Payment Execution) from Gherkin feature spec.",
+    "x-industry": {
+      "id": "banking",
+      "standards": [
+        "BIAN",
+        "ISO20022"
+      ],
+      "classification": {
+        "bian": [
+          "PaymentExecution"
+        ],
+        "iso20022": [
+          "pacs.008"
+        ],
+        "capability": [
+          "L3"
+        ]
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/payment-execution": {
+      "post": {
+        "summary": "POST /api/v1/payment-execution",
+        "operationId": "payPaymentExecution",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "requestId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "timestamp": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "payload": {
+                    "type": "object",
+                    "properties": {
+                      "idempotencia": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "idempotencia"
+                    ]
+                  }
+                },
+                "required": [
+                  "requestId",
+                  "timestamp",
+                  "payload"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "401": {
+            "description": "Unauthorized"
+          },
+          "422": {
+            "description": "Client Error"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}

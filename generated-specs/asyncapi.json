@@ -1,0 +1,126 @@
+{
+  "asyncapi": "2.6.0",
+  "info": {
+    "title": "ts15-quarkus-banking Events",
+    "version": "1.0.0",
+    "description": "Events of ts15-quarkus-banking, merged from 1 feature contract(s) in contracts/.",
+    "x-industry": {
+      "id": "banking",
+      "standards": [
+        "BIAN",
+        "ISO20022"
+      ],
+      "classification": {
+        "bian": [
+          "PaymentExecution"
+        ],
+        "iso20022": [
+          "pacs.008"
+        ],
+        "capability": [
+          "L3"
+        ]
+      }
+    }
+  },
+  "defaultContentType": "application/json",
+  "channels": {
+    "paymentexecution/events/sepublicaeventopaymentexecutedevent": {
+      "bindings": {
+        "rabbitmq": {
+          "is": "routingKey",
+          "queue": {
+            "name": "paymentexecution.sepublicaeventopaymentexecutedevent.queue",
+            "durable": true,
+            "exclusive": false,
+            "autoDelete": false
+          },
+          "bindingVersion": "0.2.0"
+        },
+        "kafka": {
+          "topic": "paymentexecution.sepublicaeventopaymentexecutedevent",
+          "partitions": 3,
+          "replicas": 2,
+          "bindingVersion": "0.3.0"
+        }
+      },
+      "publish": {
+        "summary": "Publish SePublicaEventoPaymentExecutedEvent event",
+        "message": {
+          "name": "SePublicaEventoPaymentExecutedEvent",
+          "correlationId": {
+            "description": "Correlation ID set in the header",
+            "location": "$message.header#/correlationId"
+          },
+          "headers": {
+            "type": "object",
+            "properties": {
+              "correlationId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Correlation ID for distributed tracing"
+              },
+              "causationId": {
+                "type": "string",
+                "format": "uuid",
+                "description": "ID of the event/command that caused this event"
+              },
+              "schemaVersion": {
+                "type": "string",
+                "default": "1.0"
+              },
+              "retryCount": {
+                "type": "integer",
+                "default": 0
+              },
+              "dlqReason": {
+                "type": "string",
+                "description": "Reason for moving to DLQ (if applicable)"
+              }
+            },
+            "required": [
+              "correlationId",
+              "schemaVersion"
+            ]
+          },
+          "payload": {
+            "type": "object",
+            "properties": {
+              "eventId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "occurredOn": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "eventType": {
+                "type": "string",
+                "enum": [
+                  "SePublicaEventoPaymentExecutedEvent"
+                ]
+              },
+              "payload": {
+                "type": "object",
+                "properties": {
+                  "idempotencia": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "idempotencia"
+                ]
+              }
+            },
+            "required": [
+              "eventId",
+              "occurredOn",
+              "eventType",
+              "payload"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  # Host Environment SDK Isolation Sandbox
+  app:
+    image: maven:3.9-eclipse-temurin-21
+    container_name: ts15-quarkus-banking-app
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - QUARKUS_PROFILE=dev
+      - SERVER_PORT=8080
+      - DATABASE_URL=${DATABASE_URL:-postgresql://dev_user:dev_password@postgresql:5432/ts15-quarkus-banking_db}
+      - GHK_BROKER=pubsub
+      - PUBSUB_PROJECT_ID=${PUBSUB_PROJECT_ID:-local-project}
+      - PUBSUB_EMULATOR_HOST=${PUBSUB_EMULATOR_HOST:-pubsub:8085}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgresql
+      - pubsub
+
+  # Database Service (postgresql)
+  postgresql:
+    image: postgres:16-alpine
+    container_name: ts15-quarkus-banking-db
+    restart: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ts15-quarkus-banking_db}
+      POSTGRES_USER: ${POSTGRES_USER:-dev_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  
+  # Message Broker
+  pubsub:
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    container_name: ts15-quarkus-banking-mq
+    restart: always
+    command: ["gcloud", "beta", "emulators", "pubsub", "start", "--host-port=0.0.0.0:8085", "--project=local-project"]
+    ports:
+      - "8085:8085"
+      
+  
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: ts15-quarkus-banking-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  db_data:

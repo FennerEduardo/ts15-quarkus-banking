@@ -1,0 +1,54 @@
+version: "1.0"
+projectName: ts15-quarkus-banking
+allowedPaths:
+  - specs/**
+  - tests/**
+  - generated-specs/**
+  - src/**
+  - app/**
+  - public/**
+  - views/**
+  - controllers/**
+  - domain/**
+protectedPaths:
+  - .env*
+  - docker-compose.yml
+  - "**/secrets.*"
+  - node_modules/**
+  - vendor/**
+  - .git/**
+  - .github/workflows/**
+  - terraform/**
+  - kubernetes/**
+maxFilesPerTask: 12
+prohibitedImports:
+  java:
+    - org.springframework.* (this project does not use Spring)
+    - java.sql.Statement without PreparedStatement
+requireHumanApprovalOn:
+  - docker-compose.yml
+  - package.json
+  - package-lock.json
+  - yarn.lock
+  - pnpm-lock.yaml
+  - "*.csproj"
+  - pom.xml
+  - build.gradle
+  - requirements.txt
+  - pyproject.toml
+  - go.mod
+  - go.sum
+  - Gemfile
+  - composer.json
+  - composer.lock
+  - .github/workflows/**
+  - .gitlab-ci.yml
+  - Jenkinsfile
+  - terraform/**
+  - "*.tf"
+  - kubernetes/**
+  - helm/**
+  - build.gradle.kts
+  - application.properties
+  - application.yml
+  - schema.sql

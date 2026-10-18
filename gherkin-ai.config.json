@@ -1,0 +1,24 @@
+{
+  "projectName": "ts15-quarkus-banking",
+  "architecture": "hexagonal",
+  "stack": {
+    "language": "java",
+    "framework": "quarkus",
+    "orm": "jdbc",
+    "database": "postgresql",
+    "validation": "jakarta-validation",
+    "auth": "jwt-bcrypt",
+    "messaging": "pubsub",
+    "testing": "junit"
+  },
+  "rules": {
+    "bcryptCostFactor": 12,
+    "jwtTtlSeconds": 3600,
+    "strictLayerBoundaries": true,
+    "coverageTarget": 85
+  },
+  "outputDir": "./generated-specs",
+  "industry": {
+    "id": "banking"
+  }
+}
