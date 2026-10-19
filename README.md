@@ -8,7 +8,7 @@ The project was created with the CLI from start to finish (`ghk init --enterpris
 
 | Part | Technology |
 |---|---|
-| Backend | Java 21, Quarkus 3.40 LTS (Maven): Quarkus REST, Agroal + PostgreSQL JDBC, scheduler, SmallRye Health (tier `beta`) |
+| Backend | Java 21, Quarkus 3.40 LTS (Maven): Quarkus REST, Agroal + PostgreSQL JDBC, scheduler, SmallRye Health (tier `stable`) |
 | Runtime kernel | PostgreSQL command service with idempotency and transactional outbox, outbox relay and inbox consumer with dead-letter queue over Google Cloud Pub/Sub (`stack.messaging: "pubsub"`) or RabbitMQ, saga orchestrator, OpenTelemetry trace propagation |
 | Application layer | `POST /api/v1/payment-execution/{id}/{command}` on the runtime command service; the tenant comes only from the validated JWT (`tenant_id` claim) |
 | Industry profile | `banking`: BIAN Service Landscape 12.0 and ISO 20022 (`industry.id` in `gherkin-ai.config.json`) |
