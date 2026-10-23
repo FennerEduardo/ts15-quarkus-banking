@@ -52,7 +52,7 @@
             "schema": {
               "type": "string",
               "enum": [
-                "process_payment_execution"
+                "execute_payment"
               ]
             }
           },

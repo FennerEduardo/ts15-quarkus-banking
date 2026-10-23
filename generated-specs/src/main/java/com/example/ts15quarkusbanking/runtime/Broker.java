@@ -2,8 +2,9 @@ package com.example.ts15quarkusbanking.runtime;
 
 /**
  * The event broker behind the outbox relay and the inbox consumer, chosen at run time so one image runs on
- * any cloud: GHK_BROKER=rabbitmq (AMQP_URL) or GHK_BROKER=pubsub (PUBSUB_PROJECT_ID or GOOGLE_CLOUD_PROJECT;
- * PUBSUB_EMULATOR_HOST for the emulator). Without GHK_BROKER the configured variables decide.
+ * any cloud: GHK_BROKER=rabbitmq (AMQP_URL), GHK_BROKER=pubsub (PUBSUB_PROJECT_ID or GOOGLE_CLOUD_PROJECT;
+ * PUBSUB_EMULATOR_HOST for the emulator), servicebus or kafka (KAFKA_BOOTSTRAP_SERVERS), when generated.
+ * Without GHK_BROKER the configured variables decide.
  */
 public interface Broker extends AutoCloseable {
     /** Broker of the generated configuration (stack.messaging). */
@@ -30,6 +31,7 @@ public interface Broker extends AutoCloseable {
         if (System.getenv("AMQP_URL") != null) return "rabbitmq";
         if (System.getenv("PUBSUB_PROJECT_ID") != null || System.getenv("PUBSUB_EMULATOR_HOST") != null) return "pubsub";
         if (System.getenv("SERVICEBUS_CONNECTION_STRING") != null || System.getenv("SERVICEBUS_NAMESPACE") != null) return "servicebus";
+        if (System.getenv("KAFKA_BOOTSTRAP_SERVERS") != null) return "kafka";
         return DEFAULT_KIND;
     }
 
@@ -38,6 +40,7 @@ public interface Broker extends AutoCloseable {
         return switch (kind()) {
             case "pubsub" -> System.getenv("PUBSUB_PROJECT_ID") != null || System.getenv("GOOGLE_CLOUD_PROJECT") != null;
             case "servicebus" -> System.getenv("SERVICEBUS_CONNECTION_STRING") != null || System.getenv("SERVICEBUS_NAMESPACE") != null;
+            case "kafka" -> System.getenv("KAFKA_BOOTSTRAP_SERVERS") != null && !System.getenv("KAFKA_BOOTSTRAP_SERVERS").isBlank();
             default -> System.getenv("AMQP_URL") != null && !System.getenv("AMQP_URL").isBlank();
         };
     }
@@ -46,12 +49,13 @@ public interface Broker extends AutoCloseable {
         return switch (kind()) {
             case "pubsub" -> PubSubBroker.fromEnv();
             case "servicebus" -> throw new IllegalStateException("The Azure Service Bus adapter is not generated: set stack.messaging to \"servicebus\" and regenerate");
+            case "kafka" -> throw new IllegalStateException("The Kafka adapter is not generated: set stack.messaging to \"kafka\" and regenerate");
             case "rabbitmq" -> {
                 String url = System.getenv("AMQP_URL");
                 if (url == null || url.isBlank()) throw new IllegalStateException("AMQP_URL is not set (amqp://user:password@host:5672)");
                 yield RabbitMqBroker.connect(url);
             }
-            default -> throw new IllegalStateException("Unsupported GHK_BROKER: " + kind() + " (rabbitmq, pubsub, servicebus)");
+            default -> throw new IllegalStateException("Unsupported GHK_BROKER: " + kind() + " (rabbitmq, pubsub, servicebus, kafka)");
         };
     }
 }

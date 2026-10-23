@@ -50,7 +50,7 @@ class PaymentExecutionHttpIntegrationTest {
 
     @Test
     void rejectsRequestsWithoutAValidTokenAndNeverTrustsXTenantId() throws Exception {
-        String path = "/api/v1/payment-execution/" + UUID.randomUUID() + "/process_payment_execution";
+        String path = "/api/v1/payment-execution/" + UUID.randomUUID() + "/execute_payment";
         assertEquals(401, post(path, Map.of()).statusCode());
         assertEquals(401, post(path, Map.of("X-Tenant-Id", "acme")).statusCode());
         assertEquals(401, post(path, Map.of("Authorization", bearer(Map.of("sub", "u1")))).statusCode());
@@ -62,7 +62,7 @@ class PaymentExecutionHttpIntegrationTest {
         String tenant = "tenant-" + UUID.randomUUID();
         String id = UUID.randomUUID().toString();
         Map<String, String> headers = Map.of("Authorization", bearer(Map.of(JwtTenantFilter.TENANT_CLAIM, tenant)), "Idempotency-Key", UUID.randomUUID().toString(), "X-Tenant-Id", "someone-else");
-        String path = "/api/v1/payment-execution/" + id + "/process_payment_execution";
+        String path = "/api/v1/payment-execution/" + id + "/execute_payment";
         assertEquals(202, post(path, headers).statusCode());
         HttpResponse<String> replay = post(path, headers);
         assertEquals(200, replay.statusCode());

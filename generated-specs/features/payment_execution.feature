@@ -1,5 +1,5 @@
 # language: es
-@aggregate:PaymentExecution @bian:PaymentExecution @iso20022:pacs.008 @capability:L3
+@aggregate:PaymentExecution @command:ExecutePayment @event:PaymentExecuted @bian:PaymentExecution @iso20022:pacs.008 @capability:L3
 Característica: Ejecución de pagos entre cuentas (BIAN Payment Execution)
   Como Debtor de una cuenta corriente
   Quiero ejecutar una transferencia hacia un Creditor

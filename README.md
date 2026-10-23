@@ -2,7 +2,7 @@
 
 Reference project for [gherkin-ai](https://github.com/FennerEduardo/gherkin-ai-cli) 3.2.0. A BIAN Payment Execution microservice in Quarkus 3.40 LTS. It follows the `banking` industry profile (BIAN Service Landscape and ISO 20022) and publishes to Google Cloud Pub/Sub.
 
-The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-18 (see [Verification](#verification)).
+The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-23 (see [Verification](#verification)).
 
 ## Stack
 
@@ -29,7 +29,7 @@ The `banking` profile adds deterministic lint rules to `ghk lint`, and rules tha
 
 ## Specification
 
-**Ejecución de pagos entre cuentas (BIAN Payment Execution)** (`features/payment_execution.feature`, Gherkin dialect `es`; tags `@aggregate:PaymentExecution @bian:PaymentExecution @iso20022:pacs.008 @capability:L3`)
+**Ejecución de pagos entre cuentas (BIAN Payment Execution)** (`features/payment_execution.feature`, Gherkin dialect `es`; tags `@aggregate:PaymentExecution @command:ExecutePayment @event:PaymentExecuted @bian:PaymentExecution @iso20022:pacs.008 @capability:L3`)
 
 > Como Debtor de una cuenta corriente
 > Quiero ejecutar una transferencia hacia un Creditor
@@ -42,7 +42,7 @@ Scenarios:
 3. Solicitud sin un token de acceso válido
 4. Pago rechazado por fondos insuficientes
 
-With the banking rules active, `ghk lint` scores it 99/100. `ghk converge` gives 87%, above the 80% threshold of the pull-request gate. Traceability (44%) is the lowest dimension: it is a heuristic over the commands and events detected in the Spanish steps.
+With the banking rules active, `ghk lint` scores it 99/100. `ghk converge` gives 97%, above the 80% threshold of the pull-request gate. Commands are not inferred from Spanish steps, so the feature declares them with `@command:ExecutePayment` and `@event:PaymentExecuted` (lint rule GHK016). The generated API exposes `execute_payment` instead of a generic `process_payment_execution`, and traceability reaches 100%.
 
 ## Repository layout
 
@@ -127,14 +127,14 @@ Regeneration replaces only files that are unchanged since they were generated. A
 
 ## Verification
 
-Verified on 2026-10-18 with gherkin-ai 3.2.0, in the official Linux images (Docker):
+Verified on 2026-10-23 with gherkin-ai 3.2.0, in the official Linux images (Docker):
 
 | Check | Image | Result | Time |
 |---|---|---|---|
-| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 188 s |
+| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 115 s |
 | Production image: `docker build`, start against PostgreSQL and the Pub/Sub emulator, liveness `/q/health/live` and readiness `/q/health/ready` answer 200 | `Dockerfile` | pass | included above |
 
-CLI checks with 3.2.0: `ghk lint` 99/100 (banking rules active), `ghk validate` passes, and `ghk converge` 87% (specification quality, scenario coverage, contracts, architecture policy and traceability; run it for the breakdown).
+CLI checks with 3.2.0: `ghk lint` 99/100 (banking rules active), `ghk validate` passes, and `ghk converge` 97% (specification quality, scenario coverage, contracts, architecture policy and traceability; run it for the breakdown).
 
 The same recipes run in the gherkin-ai CI for every supported stack (golden `quarkus-pubsub`). The method and the full results are in the [evaluation report](https://github.com/FennerEduardo/gherkin-ai-cli/blob/main/docs/EVALUATION_REPORT.md).
 

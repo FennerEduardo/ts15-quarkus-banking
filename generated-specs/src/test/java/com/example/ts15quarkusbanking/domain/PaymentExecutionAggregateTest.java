@@ -20,19 +20,19 @@ class PaymentExecutionAggregateTest {
     }
 
     @Test
-    void processPaymentExecutionRecordsSePublicaEventoPaymentExecutedAndBumpsTheVersion() {
+    void executePaymentRecordsPaymentExecutedAndBumpsTheVersion() {
         var aggregate = new PaymentExecutionAggregate("agg-1");
-        var event = aggregate.processPaymentExecution(new PaymentExecutionCommand("agg-1"));
-        assertEquals(PaymentExecutionEventType.SePublicaEventoPaymentExecuted, event.type());
+        var event = aggregate.executePayment(new PaymentExecutionCommand("agg-1"));
+        assertEquals(PaymentExecutionEventType.PaymentExecuted, event.type());
         assertEquals(1, event.version());
         assertEquals(1, aggregate.getVersion());
         assertEquals(1, aggregate.getPendingEvents().size());
     }
 
     @Test
-    void processPaymentExecutionRejectsACommandWithoutId() {
+    void executePaymentRejectsACommandWithoutId() {
         var aggregate = new PaymentExecutionAggregate("agg-1");
-        assertThrows(DomainValidationException.class, () -> aggregate.processPaymentExecution(new PaymentExecutionCommand("")));
+        assertThrows(DomainValidationException.class, () -> aggregate.executePayment(new PaymentExecutionCommand("")));
         assertTrue(aggregate.getPendingEvents().isEmpty());
     }
 }

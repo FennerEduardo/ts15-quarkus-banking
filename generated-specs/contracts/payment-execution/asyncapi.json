@@ -25,12 +25,12 @@
   },
   "defaultContentType": "application/json",
   "channels": {
-    "paymentexecution/events/sepublicaeventopaymentexecutedevent": {
+    "paymentexecution/events/paymentexecuted": {
       "bindings": {
         "rabbitmq": {
           "is": "routingKey",
           "queue": {
-            "name": "paymentexecution.sepublicaeventopaymentexecutedevent.queue",
+            "name": "paymentexecution.paymentexecuted.queue",
             "durable": true,
             "exclusive": false,
             "autoDelete": false
@@ -38,16 +38,16 @@
           "bindingVersion": "0.2.0"
         },
         "kafka": {
-          "topic": "paymentexecution.sepublicaeventopaymentexecutedevent",
+          "topic": "paymentexecution.paymentexecuted",
           "partitions": 3,
           "replicas": 2,
           "bindingVersion": "0.3.0"
         }
       },
       "publish": {
-        "summary": "Publish SePublicaEventoPaymentExecutedEvent event",
+        "summary": "Publish PaymentExecuted event",
         "message": {
-          "name": "SePublicaEventoPaymentExecutedEvent",
+          "name": "PaymentExecuted",
           "correlationId": {
             "description": "Correlation ID set in the header",
             "location": "$message.header#/correlationId"
@@ -97,7 +97,7 @@
               "eventType": {
                 "type": "string",
                 "enum": [
-                  "SePublicaEventoPaymentExecutedEvent"
+                  "PaymentExecuted"
                 ]
               },
               "payload": {

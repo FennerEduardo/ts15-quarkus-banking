@@ -133,7 +133,7 @@ public class CommandService {
         PaymentExecutionAggregate aggregate = state == null ? new PaymentExecutionAggregate(id) : PaymentExecutionAggregate.restore(id, PaymentExecutionState.valueOf(state), version);
         PaymentExecutionCommand cmd = new PaymentExecutionCommand(id, payload);
         PaymentExecutionDomainEvent event = switch (command) {
-            case "process_payment_execution" -> aggregate.processPaymentExecution(cmd);
+            case "execute_payment" -> aggregate.executePayment(cmd);
             default -> throw new DomainValidationException("Unknown command " + command);
         };
         return new Applied(aggregate.getState().name(), aggregate.getVersion(), event.type().name(), event.version(), event);

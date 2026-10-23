@@ -36,9 +36,9 @@ public class PaymentExecutionAggregate {
     /** Events recorded since the aggregate was loaded (to be saved via the outbox). */
     public List<PaymentExecutionDomainEvent> getPendingEvents() { return Collections.unmodifiableList(pendingEvents); }
 
-    public PaymentExecutionDomainEvent processPaymentExecution(PaymentExecutionCommand command) {
+    public PaymentExecutionDomainEvent executePayment(PaymentExecutionCommand command) {
         assertValid(command);
-        return record(PaymentExecutionEventType.SePublicaEventoPaymentExecuted, command.payload());
+        return record(PaymentExecutionEventType.PaymentExecuted, command.payload());
     }
 
     private void assertValid(PaymentExecutionCommand command) {

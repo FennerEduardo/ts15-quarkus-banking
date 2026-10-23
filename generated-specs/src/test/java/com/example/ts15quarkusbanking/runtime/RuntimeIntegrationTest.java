@@ -39,8 +39,8 @@ import org.junit.jupiter.api.Test;
  */
 @Tag("integration")
 class RuntimeIntegrationTest {
-    private static final String COMMAND = "process_payment_execution";
-    private static final String EVENT = "SePublicaEventoPaymentExecuted";
+    private static final String COMMAND = "execute_payment";
+    private static final String EVENT = "PaymentExecuted";
     private static final InMemorySpanExporter EXPORTER = InMemorySpanExporter.create();
     private static ConnectionFactory connections;
     private static Broker broker;

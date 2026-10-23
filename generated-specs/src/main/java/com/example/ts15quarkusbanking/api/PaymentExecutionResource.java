@@ -14,7 +14,7 @@ import jakarta.ws.rs.core.Response;
 import java.sql.SQLException;
 import java.util.Map;
 
-/** POST /api/v1/payment-execution/{id}/{command} (process_payment_execution). Runs on a worker thread (blocking JDBC). */
+/** POST /api/v1/payment-execution/{id}/{command} (execute_payment). Runs on a worker thread (blocking JDBC). */
 // ghk:implements PaymentExecution
 @Path("/api/v1/payment-execution")
 @Produces(MediaType.APPLICATION_JSON)
