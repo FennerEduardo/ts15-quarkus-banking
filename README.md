@@ -1,8 +1,8 @@
 # ts15-quarkus-banking
 
-Reference project for [gherkin-ai](https://github.com/FennerEduardo/gherkin-ai-cli) 3.2.0. A BIAN Payment Execution microservice in Quarkus 3.40 LTS. It follows the `banking` industry profile (BIAN Service Landscape and ISO 20022) and publishes to Google Cloud Pub/Sub.
+Reference project for [gherkin-ai](https://github.com/FennerEduardo/gherkin-ai-cli) 3.2.1. A BIAN Payment Execution microservice in Quarkus 3.40 LTS. It follows the `banking` industry profile (BIAN Service Landscape and ISO 20022) and publishes to Google Cloud Pub/Sub.
 
-The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-23 (see [Verification](#verification)).
+The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-25 (see [Verification](#verification)).
 
 ## Stack
 
@@ -127,14 +127,14 @@ Regeneration replaces only files that are unchanged since they were generated. A
 
 ## Verification
 
-Verified on 2026-10-23 with gherkin-ai 3.2.0, in the official Linux images (Docker):
+Verified on 2026-10-25 with gherkin-ai 3.2.1, in the official Linux images (Docker):
 
 | Check | Image | Result | Time |
 |---|---|---|---|
-| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 115 s |
-| Production image: `docker build`, start against PostgreSQL and the Pub/Sub emulator, liveness `/q/health/live` and readiness `/q/health/ready` answer 200 | `Dockerfile` | pass | included above |
+| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 281 s |
+| Production image: `docker build`, start against a fresh PostgreSQL database (the service creates its tables) and the Pub/Sub emulator, liveness `/q/health/live` and readiness `/q/health/ready` answer 200 | `Dockerfile` | pass | included above |
 
-CLI checks with 3.2.0: `ghk lint` 99/100 (banking rules active), `ghk validate` passes, and `ghk converge` 97% (specification quality, scenario coverage, contracts, architecture policy and traceability; run it for the breakdown).
+CLI checks with 3.2.1: `ghk lint` 99/100 (banking rules active), `ghk validate` passes, and `ghk converge` 92% (specification quality, scenario coverage, contracts, architecture policy and traceability; run it for the breakdown).
 
 The same recipes run in the gherkin-ai CI for every supported stack (golden `quarkus-pubsub`). The method and the full results are in the [evaluation report](https://github.com/FennerEduardo/gherkin-ai-cli/blob/main/docs/EVALUATION_REPORT.md).
 
