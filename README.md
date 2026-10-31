@@ -2,7 +2,7 @@
 
 Reference project for [gherkin-ai](https://github.com/FennerEduardo/gherkin-ai-cli) 3.2.1. A BIAN Payment Execution microservice in Quarkus 3.40 LTS. It follows the `banking` industry profile (BIAN Service Landscape and ISO 20022) and publishes to Google Cloud Pub/Sub.
 
-The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-25 (see [Verification](#verification)).
+The project was created with the CLI from start to finish (`ghk init --enterprise --industry banking`, `ghk lint`, `ghk generate`). Everything in `generated-specs/` was generated from the specification in `features/payment_execution.feature`. The project builds, its generated tests pass, and its runtime integration suite passes against the Pub/Sub emulator, as verified on 2026-10-30 (see [Verification](#verification)).
 
 ## Stack
 
@@ -42,7 +42,7 @@ Scenarios:
 3. Solicitud sin un token de acceso válido
 4. Pago rechazado por fondos insuficientes
 
-With the banking rules active, `ghk lint` scores it 99/100. `ghk converge` gives 97%, above the 80% threshold of the pull-request gate. Commands are not inferred from Spanish steps, so the feature declares them with `@command:ExecutePayment` and `@event:PaymentExecuted` (lint rule GHK016). The generated API exposes `execute_payment` instead of a generic `process_payment_execution`, and traceability reaches 100%.
+With the banking rules active, `ghk lint` scores it 99/100. `ghk converge` gives 92%, above the 80% threshold of the pull-request gate. Commands are not inferred from Spanish steps, so the feature declares them with `@command:ExecutePayment` and `@event:PaymentExecuted` (lint rule GHK016). The generated API exposes `execute_payment` instead of a generic `process_payment_execution`, and traceability reaches 100%.
 
 ## Repository layout
 
@@ -127,11 +127,11 @@ Regeneration replaces only files that are unchanged since they were generated. A
 
 ## Verification
 
-Verified on 2026-10-25 with gherkin-ai 3.2.1, in the official Linux images (Docker):
+Verified on 2026-10-30 with gherkin-ai 3.2.2, in the official Linux images (Docker):
 
 | Check | Image | Result | Time |
 |---|---|---|---|
-| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 281 s |
+| Quarkus 3.40 LTS (Java 21): build, tests and runtime integration against the Pub/Sub emulator (IT1–IT7 and the HTTP API) | `maven:3.9-eclipse-temurin-21` | pass | 573 s |
 | Production image: `docker build`, start against a fresh PostgreSQL database (the service creates its tables) and the Pub/Sub emulator, liveness `/q/health/live` and readiness `/q/health/ready` answer 200 | `Dockerfile` | pass | included above |
 
 CLI checks with 3.2.1: `ghk lint` 99/100 (banking rules active), `ghk validate` passes, and `ghk converge` 92% (specification quality, scenario coverage, contracts, architecture policy and traceability; run it for the breakdown).
