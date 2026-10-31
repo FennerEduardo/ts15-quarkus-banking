@@ -1,6 +1,6 @@
 {
   "version": "2",
-  "cliVersion": "3.2.1",
+  "cliVersion": "3.2.2",
   "features": {
     "features/payment_execution.feature": {
       "checksum": "ab187c4d1b1552ef9f953fa41b4c0e77707fec7efc471c9444fd4856de2227f4",
