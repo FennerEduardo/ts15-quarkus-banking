@@ -1,6 +1,6 @@
 {
   "version": "2",
-  "cliVersion": "3.2.2",
+  "cliVersion": "3.3.0",
   "features": {
     "features/payment_execution.feature": {
       "checksum": "ab187c4d1b1552ef9f953fa41b4c0e77707fec7efc471c9444fd4856de2227f4",
@@ -290,9 +290,9 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/ConnectionFactory.java",
       "type": "test",
-      "checksum": "0aaf6129a0742bef824c2735083872c373863bc06918fc77495aa287fc559f08",
+      "checksum": "024610d5e0f19668a4b5583bab8b94001dd0c74a85df1793fb4bc467f4254933",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-03T13:49:06.430Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/DatabaseUrlConfigSource.java",
