@@ -14,6 +14,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -27,14 +29,25 @@ public class CommandService {
     public static final String DEFAULT_AGGREGATE = "PaymentExecution";
     private static final ObjectMapper JSON = new ObjectMapper().findAndRegisterModules();
 
-    /** aggregateType: the feature's aggregate (e.g. "PaymentExecution"); null means DEFAULT_AGGREGATE. */
-    public record Request(String tenantId, String aggregateId, String command, Map<String, Object> payload, String idempotencyKey, String traceparent, String aggregateType) {
+    /**
+     * aggregateType: the feature's aggregate (e.g. "PaymentExecution"); null means DEFAULT_AGGREGATE. caller: the roles and
+     * permissions of the token, checked against the command's contract when given.
+     */
+    public record Request(String tenantId, String aggregateId, String command, Map<String, Object> payload, String idempotencyKey, String traceparent, String aggregateType, Contracts.Caller caller) {
+        public Request(String tenantId, String aggregateId, String command, Map<String, Object> payload, String idempotencyKey, String traceparent, String aggregateType) {
+            this(tenantId, aggregateId, command, payload, idempotencyKey, traceparent, aggregateType, null);
+        }
+
         public Request(String tenantId, String aggregateId, String command, Map<String, Object> payload, String idempotencyKey, String traceparent) {
-            this(tenantId, aggregateId, command, payload, idempotencyKey, traceparent, null);
+            this(tenantId, aggregateId, command, payload, idempotencyKey, traceparent, null, null);
+        }
+
+        public Request(String tenantId, String aggregateId, String command, Map<String, Object> payload) {
+            this(tenantId, aggregateId, command, payload, null, null, null, null);
         }
 
         public Request(String tenantId, String aggregateId, String command) {
-            this(tenantId, aggregateId, command, Map.of(), null, null, null);
+            this(tenantId, aggregateId, command, Map.of(), null, null, null, null);
         }
 
         String type() {
@@ -49,6 +62,11 @@ public class CommandService {
 
     public record Snapshot(String state, long version) {}
 
+    /** A page of the reads: each item has id, state, version and the fields its commands wrote. */
+    public record ListResult(List<Map<String, Object>> items, int page, int size, long total) {}
+
+    private static final java.util.regex.Pattern FIELD = java.util.regex.Pattern.compile("[A-Za-z_][A-Za-z0-9_]*");
+
     private final ConnectionFactory connections;
     private final String s;
 
@@ -57,8 +75,15 @@ public class CommandService {
         this.s = Schema.name(schema);
     }
 
-    public Result handle(Request req) throws SQLException {
-        if (req.tenantId() == null || req.tenantId().isBlank()) throw new DomainValidationException("tenantId is required");
+    public Result handle(Request request) throws SQLException {
+        if (request.tenantId() == null || request.tenantId().isBlank()) throw new DomainValidationException("tenantId is required");
+        Contracts.OperationContract op = Contracts.command(request.type(), request.command());
+        Contracts.authorize(op, request.caller(), request.type() + "." + request.command());
+        // Fields starting with _ belong to the service (the identity's password hash): a command never writes them.
+        Map<String, Object> payload = new LinkedHashMap<>();
+        if (request.payload() != null) request.payload().forEach((k, v) -> { if (!k.startsWith("_")) payload.put(k, v); });
+        Contracts.validate(op, payload);
+        Request req = new Request(request.tenantId(), request.aggregateId(), request.command(), payload, request.idempotencyKey(), request.traceparent(), request.aggregateType(), request.caller());
         Context parent = Telemetry.contextFrom(req.traceparent());
         Span span = Telemetry.tracer().spanBuilder("PaymentExecution." + req.command()).setParent(parent).setSpanKind(SpanKind.INTERNAL)
             .setAttribute("tenant.id", req.tenantId()).setAttribute("aggregate.id", req.aggregateId()).startSpan();
@@ -101,7 +126,8 @@ public class CommandService {
         String type = req.type();
         String state = null;
         long version = 0;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT state, version FROM " + s + ".ghk_aggregates WHERE tenant_id = ? AND aggregate_type = ? AND id = ? FOR UPDATE")) {
+        String dataJson = "{}";
+        try (PreparedStatement ps = conn.prepareStatement("SELECT state, version, data FROM " + s + ".ghk_aggregates WHERE tenant_id = ? AND aggregate_type = ? AND id = ? FOR UPDATE")) {
             ps.setString(1, req.tenantId());
             ps.setString(2, type);
             ps.setString(3, req.aggregateId());
@@ -109,17 +135,29 @@ public class CommandService {
                 if (rs.next()) {
                     state = rs.getString(1);
                     version = rs.getLong(2);
+                    dataJson = rs.getString(3);
                 }
             }
         }
-        Map<String, Object> payload = req.payload() == null ? Map.of() : req.payload();
+        // Secrets (a password, a reset token) are validated, never stored: not in the read model, not in the event.
+        Map<String, Object> payload = new LinkedHashMap<>();
+        if (req.payload() != null) req.payload().forEach((k, v) -> { if (!Contracts.SECRET.matcher(k).matches()) payload.put(k, v); });
         Applied applied = switch (type) {
             case "PaymentExecution" -> applyPaymentExecution(req.aggregateId(), state, version, req.command(), payload);
             default -> throw new DomainValidationException("Unknown aggregate type " + type);
         };
-        update(conn, "INSERT INTO " + s + ".ghk_aggregates (tenant_id, aggregate_type, id, state, version) VALUES (?, ?, ?, ?, ?) "
-            + "ON CONFLICT (tenant_id, aggregate_type, id) DO UPDATE SET state = EXCLUDED.state, version = EXCLUDED.version, updated_at = now()",
-            req.tenantId(), type, req.aggregateId(), applied.state(), applied.version());
+        // The read model: the fields the commands wrote, the last value of each.
+        Map<String, Object> data = AccountService.parseData(dataJson);
+        data.putAll(payload);
+        Contracts.OperationContract op = Contracts.command(type, req.command());
+        update(conn, "INSERT INTO " + s + ".ghk_aggregates (tenant_id, aggregate_type, id, state, version, data, deleted) VALUES (?, ?, ?, ?, ?, ?, ?) "
+            + "ON CONFLICT (tenant_id, aggregate_type, id) DO UPDATE SET state = EXCLUDED.state, version = EXCLUDED.version, data = EXCLUDED.data, deleted = EXCLUDED.deleted, updated_at = now()",
+            req.tenantId(), type, req.aggregateId(), applied.state(), applied.version(), writeJson(data), op != null && op.deletes());
+        // A command of a role aggregate (assign_docente) gives its role to the user it names, or to the caller.
+        Contracts.AggregateContract grantsOf = Contracts.ALL.get(type);
+        String role = grantsOf == null ? null : grantsOf.grants().get(req.command());
+        Object user = payload.containsKey("user_id") ? payload.get("user_id") : req.caller() == null ? null : req.caller().subject();
+        if (role != null && user != null) update(conn, "UPDATE __SCHEMA__.ghk_aggregates SET data = jsonb_set(data::jsonb, '{roles}', (SELECT COALESCE(jsonb_agg(DISTINCT r), '[]'::jsonb) FROM jsonb_array_elements_text(COALESCE(data::jsonb -> 'roles', '[]'::jsonb) || jsonb_build_array(?::text)) AS r))::text, version = version + 1, updated_at = now() WHERE tenant_id = ? AND aggregate_type = 'User' AND NOT deleted AND (id = ? OR data::jsonb ->> 'legacy_id' = ?)".replace("__SCHEMA__", s), role, req.tenantId(), String.valueOf(user), String.valueOf(user));
         update(conn, "INSERT INTO " + s + ".ghk_outbox (id, tenant_id, aggregate_id, event_type, payload, traceparent) VALUES (?, ?, ?, ?, ?, ?)",
             UUID.randomUUID().toString(), req.tenantId(), req.aggregateId(), applied.eventType(), writeJson(applied.event()), traceparent);
         Result result = new Result("created", req.aggregateId(), applied.eventType(), applied.eventVersion());
@@ -152,6 +190,77 @@ public class CommandService {
             ps.setString(3, aggregateId);
             try (ResultSet rs = ps.executeQuery()) {
                 return rs.next() ? Optional.of(new Snapshot(rs.getString(1), rs.getLong(2))) : Optional.empty();
+            }
+        }
+    }
+
+    /** An aggregate as the reads return it: the fields its commands wrote (none starting with _), id, state and version. */
+    private static Map<String, Object> item(String id, String state, long version, String data) {
+        Map<String, Object> item = new LinkedHashMap<>();
+        AccountService.parseData(data).forEach((k, v) -> { if (!k.startsWith("_")) item.put(k, v); });
+        item.put("id", id);
+        item.put("state", state);
+        item.put("version", version);
+        return item;
+    }
+
+    public ListResult list(String tenantId, String aggregateType, Map<String, String> filters, int page, int size) throws SQLException {
+        return list(tenantId, aggregateType, filters, page, size, null);
+    }
+
+    /**
+     * The tenant's aggregates of a type that no command deleted, newest first. Filters keep those whose field equals
+     * the value (?editorial_id=7: the ListXByEditorial reads of the features).
+     */
+    public ListResult list(String tenantId, String aggregateType, Map<String, String> filters, int page, int size, Contracts.Caller caller) throws SQLException {
+        Contracts.AggregateContract contract = Contracts.ALL.get(aggregateType);
+        if (contract != null) Contracts.authorize(contract.list(), caller, aggregateType + ".list");
+        int p = Math.max(1, page);
+        int n = Math.min(200, Math.max(1, size));
+        StringBuilder where = new StringBuilder("tenant_id = ? AND aggregate_type = ? AND NOT deleted");
+        List<Object> args = new java.util.ArrayList<>(List.of(tenantId, aggregateType));
+        if (filters != null) filters.forEach((k, v) -> {
+            if (!FIELD.matcher(k).matches() || k.startsWith("_")) return;
+            where.append(" AND (data::jsonb ->> ?) = ?");
+            args.add(k);
+            args.add(v);
+        });
+        String from = " FROM " + s + ".ghk_aggregates WHERE " + where;
+        try (Connection conn = connections.open()) {
+            long total;
+            try (PreparedStatement ps = conn.prepareStatement("SELECT count(*)" + from)) {
+                for (int i = 0; i < args.size(); i++) ps.setObject(i + 1, args.get(i));
+                try (ResultSet rs = ps.executeQuery()) {
+                    rs.next();
+                    total = rs.getLong(1);
+                }
+            }
+            List<Map<String, Object>> items = new java.util.ArrayList<>();
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id, state, version, data" + from + " ORDER BY updated_at DESC, id LIMIT " + n + " OFFSET " + ((p - 1) * n))) {
+                for (int i = 0; i < args.size(); i++) ps.setObject(i + 1, args.get(i));
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) items.add(item(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getString(4)));
+                }
+            }
+            return new ListResult(items, p, n, total);
+        }
+    }
+
+    public Optional<Map<String, Object>> get(String tenantId, String aggregateType, String aggregateId) throws SQLException {
+        return get(tenantId, aggregateType, aggregateId, null);
+    }
+
+    /** One aggregate of the tenant (empty when it does not exist, belongs to another tenant or was deleted). */
+    public Optional<Map<String, Object>> get(String tenantId, String aggregateType, String aggregateId, Contracts.Caller caller) throws SQLException {
+        Contracts.AggregateContract contract = Contracts.ALL.get(aggregateType);
+        if (contract != null) Contracts.authorize(contract.get(), caller, aggregateType + ".get");
+        try (Connection conn = connections.open();
+             PreparedStatement ps = conn.prepareStatement("SELECT id, state, version, data FROM " + s + ".ghk_aggregates WHERE tenant_id = ? AND aggregate_type = ? AND id = ? AND NOT deleted")) {
+            ps.setString(1, tenantId);
+            ps.setString(2, aggregateType);
+            ps.setString(3, aggregateId);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? Optional.of(item(rs.getString(1), rs.getString(2), rs.getLong(3), rs.getString(4))) : Optional.empty();
             }
         }
     }

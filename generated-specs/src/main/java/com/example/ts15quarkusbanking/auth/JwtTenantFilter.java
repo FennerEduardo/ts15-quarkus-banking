@@ -39,17 +39,41 @@ public class JwtTenantFilter implements ContainerRequestFilter {
     public void filter(ContainerRequestContext request) {
         String path = request.getUriInfo().getPath();
         if (!(path.startsWith("/api/") || path.startsWith("api/"))) return;
-        String tenantId = tenantOf(request.getHeaderString("Authorization"), secret.orElse(""));
+        // The sign-in and the registration are what issue tokens.
+        if (path.matches("/?api/v1/auth/(login|register)")) return;
+        Map<?, ?> claims = claimsOf(request.getHeaderString("Authorization"), secret.orElse(""));
+        String tenantId = claims != null && claims.get(TENANT_CLAIM) instanceof String t && !t.isBlank() ? t : null;
+        // A read without a token goes on as nobody in the default tenant: each resource answers 401 unless its feature
+        // reads in public.
+        if (tenantId == null && "GET".equals(request.getMethod()) && request.getHeaderString("Authorization") == null) {
+            String fallback = System.getenv("GHK_DEFAULT_TENANT");
+            tenant.setAnonymous(fallback == null || fallback.isBlank() ? "default" : fallback);
+            return;
+        }
         if (tenantId == null) {
             request.abortWith(Response.status(Response.Status.UNAUTHORIZED).type(MediaType.APPLICATION_JSON)
                 .entity("{\"detail\":\"A valid bearer token with a tenant is required\"}").build());
             return;
         }
-        tenant.set(tenantId);
+        java.util.List<String> permissions = new java.util.ArrayList<>(strings(claims.get("permissions")));
+        permissions.addAll(strings(claims.get("scope")));
+        tenant.set(tenantId, claims.get("sub") instanceof String sub ? sub : null, strings(claims.get("roles")), permissions);
+    }
+
+    private static java.util.List<String> strings(Object v) {
+        if (v instanceof java.util.List<?> l) return l.stream().map(String::valueOf).toList();
+        if (v instanceof String s && !s.isBlank()) return java.util.Arrays.stream(s.split("[ ,]+")).filter(x -> !x.isEmpty()).toList();
+        return java.util.List.of();
     }
 
     /** Tenant claim of a valid HS256 token (signature, exp, nbf checked), else null. */
     public static String tenantOf(String authorization, String secret) {
+        Map<?, ?> claims = claimsOf(authorization, secret);
+        return claims != null && claims.get(TENANT_CLAIM) instanceof String t && !t.isBlank() ? t : null;
+    }
+
+    /** Claims of a valid HS256 token (signature, exp, nbf checked), else null. */
+    public static Map<?, ?> claimsOf(String authorization, String secret) {
         if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7) || secret == null || secret.isEmpty()) return null;
         String[] parts = authorization.substring(7).trim().split("\\.");
         if (parts.length != 3) return null;
@@ -64,7 +88,7 @@ public class JwtTenantFilter implements ContainerRequestFilter {
             long now = System.currentTimeMillis() / 1000;
             if (claims.get("exp") instanceof Number exp && now >= exp.longValue()) return null;
             if (claims.get("nbf") instanceof Number nbf && now < nbf.longValue()) return null;
-            return claims.get(TENANT_CLAIM) instanceof String t && !t.isBlank() ? t : null;
+            return claims;
         } catch (Exception e) {
             return null;
         }

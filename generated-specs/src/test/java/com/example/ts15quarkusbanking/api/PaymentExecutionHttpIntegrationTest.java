@@ -37,16 +37,66 @@ class PaymentExecutionHttpIntegrationTest {
         Schema.migrate(ConnectionFactory.fromUrl(System.getenv("DATABASE_URL")), "public");
     }
 
+    /** Every role the feature names, and a payload that passes the command's rules (from the feature). */
+    private static final java.util.List<String> ROLES = java.util.List.of();
+    private static final java.util.List<String> COMMAND_ROLES = java.util.List.of();
+    private static final java.util.List<String> REQUIRED = java.util.List.of();
+    private static final String PAYLOAD = "{}";
+    private static final java.util.List<String> VISIBLE = java.util.List.of();
+
     private HttpResponse<String> post(String path, Map<String, String> headers) throws Exception {
+        return post(path, headers, PAYLOAD);
+    }
+
+    private HttpResponse<String> post(String path, Map<String, String> headers, String body) throws Exception {
         HttpRequest.Builder req = HttpRequest.newBuilder(base.toURI().resolve(path.substring(1)))
-            .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString("{}"));
+            .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(body));
+        headers.forEach(req::header);
+        return HTTP.send(req.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> get(String path, Map<String, String> headers) throws Exception {
+        HttpRequest.Builder req = HttpRequest.newBuilder(base.toURI().resolve(path.substring(1))).GET();
         headers.forEach(req::header);
         return HTTP.send(req.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     private static String bearer(Map<String, Object> claims) throws Exception {
-        return "Bearer " + JwtTenantFilter.sign(claims, SECRET);
+        Map<String, Object> all = new java.util.HashMap<>(claims);
+        all.putIfAbsent("roles", ROLES);
+        return "Bearer " + JwtTenantFilter.sign(all, SECRET);
     }
+
+    @Test
+    void readsBackWhatTheCommandsWroteForTheTokenTenantOnly() throws Exception {
+        String tenant = "tenant-" + UUID.randomUUID();
+        String id = UUID.randomUUID().toString();
+        Map<String, String> auth = Map.of("Authorization", bearer(Map.of(JwtTenantFilter.TENANT_CLAIM, tenant)));
+        assertEquals(202, post("/api/v1/payment-execution/" + id + "/execute_payment", auth).statusCode());
+        HttpResponse<String> one = get("/api/v1/payment-execution/" + id, auth);
+        assertEquals(200, one.statusCode());
+        String compact = one.body().replace(" ", "");
+        for (String pair : VISIBLE) assertTrue(compact.contains(pair.replace(" ", "")), pair + " in " + one.body());
+        assertTrue(get("/api/v1/payment-execution?size=200", auth).body().contains(id));
+        assertEquals(404, get("/api/v1/payment-execution/" + id, Map.of("Authorization", bearer(Map.of(JwtTenantFilter.TENANT_CLAIM, "other-" + tenant)))).statusCode());
+        assertEquals(401, get("/api/v1/payment-execution", Map.of()).statusCode());
+    }
+
+    @Test
+    void rejectsAPayloadThatBreaksTheFieldsWith422AndTheFields() throws Exception {
+        if (REQUIRED.isEmpty()) return;
+        HttpResponse<String> res = post("/api/v1/payment-execution/" + UUID.randomUUID() + "/execute_payment", Map.of("Authorization", bearer(Map.of(JwtTenantFilter.TENANT_CLAIM, "acme"))), "{}");
+        assertEquals(422, res.statusCode());
+        assertTrue(res.body().contains("\"" + REQUIRED.get(0) + "\""));
+    }
+
+    @Test
+    void answers403WhenTheTokenLacksTheRoleTheFeatureRequires() throws Exception {
+        if (COMMAND_ROLES.isEmpty()) return;
+        HttpResponse<String> res = post("/api/v1/payment-execution/" + UUID.randomUUID() + "/execute_payment", Map.of("Authorization", bearer(Map.of(JwtTenantFilter.TENANT_CLAIM, "acme", "roles", java.util.List.of()))));
+        assertEquals(403, res.statusCode());
+    }
+
 
     @Test
     void rejectsRequestsWithoutAValidTokenAndNeverTrustsXTenantId() throws Exception {

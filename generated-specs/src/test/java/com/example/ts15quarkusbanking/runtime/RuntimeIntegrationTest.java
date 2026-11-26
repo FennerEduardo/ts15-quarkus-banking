@@ -41,6 +41,10 @@ import org.junit.jupiter.api.Test;
 class RuntimeIntegrationTest {
     private static final String COMMAND = "execute_payment";
     private static final String EVENT = "PaymentExecuted";
+    /** A payload that passes the command's rules (from the feature's fields). */
+    private static final Map<String, Object> PAYLOAD = Map.of();
+    private static final List<String> REQUIRED = List.of();
+    private static final List<String> ROLES = List.of();
     private static final InMemorySpanExporter EXPORTER = InMemorySpanExporter.create();
     private static ConnectionFactory connections;
     private static Broker broker;
@@ -117,7 +121,7 @@ class RuntimeIntegrationTest {
     @Test
     void it1AtomicWriteAndRollback() throws Exception {
         var service = new CommandService(connections, schema);
-        var result = service.handle(new CommandService.Request("t1", "agg-1", COMMAND));
+        var result = service.handle(new CommandService.Request("t1", "agg-1", COMMAND, PAYLOAD));
         assertEquals("created", result.status());
         assertEquals(EVENT, result.eventType());
         assertEquals(1L, result.version());
@@ -137,7 +141,7 @@ class RuntimeIntegrationTest {
         var service = new CommandService(connections, schema);
         ExecutorService pool = Executors.newFixedThreadPool(5);
         List<Future<CommandService.Result>> futures = new ArrayList<>();
-        for (int i = 0; i < 5; i++) futures.add(pool.submit(() -> service.handle(new CommandService.Request("t1", "agg-1", COMMAND, Map.of(), "key-1", null))));
+        for (int i = 0; i < 5; i++) futures.add(pool.submit(() -> service.handle(new CommandService.Request("t1", "agg-1", COMMAND, PAYLOAD, "key-1", null))));
         List<CommandService.Result> results = new ArrayList<>();
         for (var f : futures) results.add(f.get());
         pool.shutdown();
@@ -153,7 +157,7 @@ class RuntimeIntegrationTest {
     @Test
     void it3ConcurrentRelaysPublishExactlyOnce() throws Exception {
         var service = new CommandService(connections, schema);
-        for (int i = 0; i < 20; i++) service.handle(new CommandService.Request("t1", "agg-" + i, COMMAND));
+        for (int i = 0; i < 20; i++) service.handle(new CommandService.Request("t1", "agg-" + i, COMMAND, PAYLOAD));
         ExecutorService pool = Executors.newFixedThreadPool(2);
         List<Future<Integer>> totals = new ArrayList<>();
         for (String worker : List.of("relay-a", "relay-b")) {
@@ -179,11 +183,35 @@ class RuntimeIntegrationTest {
     }
 
     @Test
+    void it8ReadsReturnWhatCommandsWroteAndFieldsAndRolesAreEnforced() throws Exception {
+        var service = new CommandService(connections, schema);
+        service.handle(new CommandService.Request("t1", "read-1", COMMAND, PAYLOAD));
+        Map<String, Object> item = service.get("t1", "PaymentExecution", "read-1").orElseThrow();
+        assertEquals("read-1", item.get("id"));
+        for (var e : PAYLOAD.entrySet()) {
+            if (Contracts.SECRET.matcher(e.getKey()).matches()) assertTrue(!item.containsKey(e.getKey()));
+            else if (!List.of("id", "state", "version").contains(e.getKey())) assertEquals(String.valueOf(e.getValue()), String.valueOf(item.get(e.getKey())));
+        }
+        assertTrue(service.list("t1", "PaymentExecution", Map.of(), 1, 200).items().stream().anyMatch(i -> "read-1".equals(i.get("id"))));
+        assertEquals(0L, service.list("t2", "PaymentExecution", Map.of(), 1, 20).total());
+        assertTrue(service.get("t2", "PaymentExecution", "read-1").isEmpty());
+        if (!REQUIRED.isEmpty()) {
+            var invalid = assertThrows(Contracts.FieldValidationException.class, () -> service.handle(new CommandService.Request("t1", "read-2", COMMAND, Map.of())));
+            assertTrue(invalid.getMessage().contains(REQUIRED.get(0) + " is required"));
+            assertTrue(service.load("t1", "read-2").isEmpty());
+        }
+        if (!ROLES.isEmpty()) {
+            assertThrows(Contracts.ForbiddenException.class, () -> service.handle(new CommandService.Request("t1", "read-3", COMMAND, PAYLOAD, null, null, null, new Contracts.Caller(null, List.of(), List.of()))));
+            service.handle(new CommandService.Request("t1", "read-3", COMMAND, PAYLOAD, null, null, null, new Contracts.Caller(null, List.of(ROLES.get(0)), List.of())));
+        }
+    }
+
+    @Test
     void it4TenantIsolation() throws Exception {
         var service = new CommandService(connections, schema);
-        service.handle(new CommandService.Request("tenant-a", "shared-id", COMMAND));
+        service.handle(new CommandService.Request("tenant-a", "shared-id", COMMAND, PAYLOAD));
         assertTrue(service.load("tenant-b", "shared-id").isEmpty());
-        service.handle(new CommandService.Request("tenant-b", "shared-id", COMMAND));
+        service.handle(new CommandService.Request("tenant-b", "shared-id", COMMAND, PAYLOAD));
         assertEquals(1L, service.load("tenant-a", "shared-id").orElseThrow().version());
         assertEquals(1L, service.load("tenant-b", "shared-id").orElseThrow().version());
         assertEquals(1, count("ghk_outbox", "tenant_id = ?", "tenant-a"));
@@ -228,7 +256,7 @@ class RuntimeIntegrationTest {
     @Test
     void it7TraceContextPropagation() throws Exception {
         var service = new CommandService(connections, schema);
-        service.handle(new CommandService.Request("t1", "agg-1", COMMAND, Map.of(), null, "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"));
+        service.handle(new CommandService.Request("t1", "agg-1", COMMAND, PAYLOAD, null, "00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01"));
         try (Connection conn = connections.open(); Statement st = conn.createStatement(); ResultSet rs = st.executeQuery("SELECT traceparent FROM " + schema + ".ghk_outbox")) {
             rs.next();
             assertTrue(rs.getString(1).contains("4bf92f3577b34da6a3ce929d0e0e4736"));

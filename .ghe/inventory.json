@@ -1,6 +1,6 @@
 {
   "version": "2",
-  "cliVersion": "3.3.0",
+  "cliVersion": "3.5.0",
   "features": {
     "features/payment_execution.feature": {
       "checksum": "ab187c4d1b1552ef9f953fa41b4c0e77707fec7efc471c9444fd4856de2227f4",
@@ -108,9 +108,9 @@
     {
       "filePath": "pom.xml",
       "type": "config",
-      "checksum": "0ca8b201adc8374bca280e42a195f1b5c2087f5c1337ace3780675c4980056fa",
+      "checksum": "662bf102a2b6d6b17be518de5101bd121638f1df4fb3b96ecc0f40b108bc7ce5",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "prompts/backend-agent.md",
@@ -141,6 +141,13 @@
       "generatedAt": "2026-10-25T05:49:58.175Z"
     },
     {
+      "filePath": "src/main/java/com/example/ts15quarkusbanking/api/ContractExceptionMappers.java",
+      "type": "test",
+      "checksum": "3f9c26da74d0650e9f6c6c324bde1ad0e0d430a7772dfcf53906c75c5b6d9314",
+      "feature": "features/payment_execution.feature",
+      "generatedAt": "2026-11-26T12:43:12.579Z"
+    },
+    {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/api/DomainValidationExceptionMapper.java",
       "type": "test",
       "checksum": "1ab41a0f301149f101210f6425a460f3b8ac00dfbbd0167fa7f6bbf5d4b2d862",
@@ -157,9 +164,9 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/api/PaymentExecutionResource.java",
       "type": "test",
-      "checksum": "db0b10b2810c5895b552466f35e2b459490d795debf12fd87a1d7c1c42ca25fe",
+      "checksum": "f97ff40b849237f02732604f32bc14fa5a8c35b26a4daf701918141060134393",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/application/dto/IdempotenciaDTO.java",
@@ -171,16 +178,16 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/auth/JwtTenantFilter.java",
       "type": "test",
-      "checksum": "c9a931e41b2607203951d9fb5595941a1a1faae8dd21f2f74714a4e5483c004c",
+      "checksum": "4116aa818bb4d5859be0b227d990df1767e1a912d7e6dba9edbb29d0e7e2a8e6",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/auth/TenantContext.java",
       "type": "test",
-      "checksum": "ac52243306487e4c16e802ad3b4f2879c90fdf236c16e49e11ce887fec126772",
+      "checksum": "58e7c786811680de68435907e9f19a77b7717d7bb71367fa3b6d8f4933c02537",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/domain/DomainValidationException.java",
@@ -267,6 +274,13 @@
       "generatedAt": "2026-10-25T05:49:58.175Z"
     },
     {
+      "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/AccountService.java",
+      "type": "test",
+      "checksum": "f9a279272280c5c9409f2771de2b6ce2fc57ab5772e5906bda78f7243fa6688a",
+      "feature": "features/payment_execution.feature",
+      "generatedAt": "2026-11-26T12:43:12.579Z"
+    },
+    {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/Broker.java",
       "type": "test",
       "checksum": "c353334afc656e468c366c1efb810553647bbec3f29e569215757b611abf94d1",
@@ -283,9 +297,9 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/CommandService.java",
       "type": "test",
-      "checksum": "ab1b3522f8d3fdcd3d6b0771f48555d03ae8c7231769ef53fea50500486ed15e",
+      "checksum": "088052d9a56324fbecd7cee8aa07a9173625d0a6d0efbb228045ce908ce7ffe5",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/ConnectionFactory.java",
@@ -293,6 +307,13 @@
       "checksum": "024610d5e0f19668a4b5583bab8b94001dd0c74a85df1793fb4bc467f4254933",
       "feature": "features/payment_execution.feature",
       "generatedAt": "2026-11-03T13:49:06.430Z"
+    },
+    {
+      "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/Contracts.java",
+      "type": "test",
+      "checksum": "8a75c2e35f1fb8d1a0b5858c104f6e5f4ed76981f195b93750e5b6af41909d6a",
+      "feature": "features/payment_execution.feature",
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/DatabaseUrlConfigSource.java",
@@ -353,9 +374,9 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/RuntimeProducers.java",
       "type": "test",
-      "checksum": "8837329d5e110b1027f1031156921ec66d8cc0597514d3f0693773bea02795b7",
+      "checksum": "6fbc7c25aad5448fc370493aeb4f424c533101fbebdddba338233e377bcf1bec",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/SagaOrchestrator.java",
@@ -367,9 +388,9 @@
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/Schema.java",
       "type": "test",
-      "checksum": "96f90d85868233f9584e1db0311db21cab01ef9f1d965e05fb61f551e616162b",
+      "checksum": "08eb6ae669d083bc9d5479f20d7c826721acaedb53a84b82fa6f064e447136ba",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/main/java/com/example/ts15quarkusbanking/runtime/Telemetry.java",
@@ -409,9 +430,9 @@
     {
       "filePath": "src/test/java/com/example/ts15quarkusbanking/api/PaymentExecutionHttpIntegrationTest.java",
       "type": "test",
-      "checksum": "45ceef069df21397d7354894c5448ebe36132ef8079e937f435559260173cc93",
+      "checksum": "d547ee2fc660be4ec1b27f3c2bc68f6a82f72148b60cdd04ca522de8e7a70b24",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     },
     {
       "filePath": "src/test/java/com/example/ts15quarkusbanking/bdd/EjecucionDePagosEntreCuentasBianPaymentExecutionSteps.java",
@@ -451,9 +472,9 @@
     {
       "filePath": "src/test/java/com/example/ts15quarkusbanking/runtime/RuntimeIntegrationTest.java",
       "type": "test",
-      "checksum": "6c8076dcadb65f9e55469a1f5980979f06ed673854c8df823e721d78f4278e14",
+      "checksum": "66190554ebd462c54eb9247a71f760f525cd7701b76a7aa620a910d1d9c0b257",
       "feature": "features/payment_execution.feature",
-      "generatedAt": "2026-10-25T05:49:58.175Z"
+      "generatedAt": "2026-11-26T12:43:12.579Z"
     }
   ],
   "executions": []

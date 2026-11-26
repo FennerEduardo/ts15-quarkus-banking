@@ -29,4 +29,15 @@ public class RuntimeProducers {
     CommandService commandService(ConnectionFactory connections) {
         return new CommandService(connections, "public");
     }
+
+    @Produces
+    @ApplicationScoped
+    AccountService accountService(ConnectionFactory connections) {
+        return new AccountService(connections, "public");
+    }
+
+    /** The first administrator (GHK_ADMIN_EMAIL / GHK_ADMIN_PASSWORD) of the identity service, once the tables exist. */
+    void bootstrapAdmin(@Observes @jakarta.annotation.Priority(3000) StartupEvent event, AccountService accounts) throws java.sql.SQLException {
+        accounts.bootstrapAdmin();
+    }
 }
